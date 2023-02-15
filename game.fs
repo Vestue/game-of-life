@@ -1,0 +1,63 @@
+﻿namespace DVA229_Lab4_AvaloniaElmish
+open System.Linq.Expressions
+open Avalonia.Layout
+open Microsoft.VisualBasic.CompilerServices
+
+module Game =
+    open Avalonia.Controls
+    open Avalonia.FuncUI.DSL
+    open Microsoft.FSharp.Collections
+    
+     type Cell =
+          Dead 
+          |Alive
+          
+          
+     type UserAction =
+         ChangeCellState of Cell
+         | Start
+         | Stop
+         | Save
+          
+     type State = Cell list list
+     let cellToString (cell: Cell) =
+            match cell with
+            | Dead -> " "
+            | Alive -> "#"
+     
+ 
+    let gridHeight = 16
+    let gridWidth = 16
+    let init : State = List.init gridHeight (fun _ -> List.init gridWidth (fun _ -> Dead))
+    let rec update (msg: UserAction) (state : State) : State=
+         state
+    let view (state : State) dispatch =
+        printfn $"{state}"
+        let squareWidth = 25.0
+        let squareHeight = 25.0
+        let buttonsInColumn = 16.0
+        
+        let createSquare (cell: Cell)=
+            ToggleButton.create [
+                Button.width(squareWidth)
+                Button.height(squareHeight)
+                Button.content(cellToString cell)
+                
+            ]
+            
+        DockPanel.create [
+            DockPanel.children [
+                WrapPanel.create [
+                        WrapPanel.horizontalAlignment HorizontalAlignment.Center
+                        WrapPanel.verticalAlignment VerticalAlignment.Center
+                        WrapPanel.dock Dock.Bottom
+                        WrapPanel.itemWidth squareWidth
+                        WrapPanel.maxWidth (squareHeight * buttonsInColumn)
+                        WrapPanel.children[
+                          for row in state do
+                              for cel in row do
+                                createSquare cel
+                               
+                    ]
+             ]
+    ]    ]
