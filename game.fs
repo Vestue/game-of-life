@@ -9,8 +9,8 @@ module Game =
     open Microsoft.FSharp.Collections
     
      type Cell =
-          Dead 
-          |Alive
+          Dead of int*int
+          |Alive of int*int
           
           
      type UserAction =
@@ -22,13 +22,13 @@ module Game =
      type State = Cell list list
      let cellToString (cell: Cell) =
             match cell with
-            | Dead -> " "
-            | Alive -> "#"
+            | Dead (_, _) -> " "
+            | Alive (_, _) -> "#"
      
  
     let gridHeight = 16
     let gridWidth = 16
-    let init : State = List.init gridHeight (fun _ -> List.init gridWidth (fun _ -> Dead))
+    let init : State = List.init gridHeight (fun c -> List.init gridWidth (fun r -> Dead (c, r)))
     let rec update (msg: UserAction) (state : State) : State=
          state
     let view (state : State) dispatch =
