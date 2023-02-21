@@ -18,6 +18,7 @@ module Game =
          | Start
          | Stop
          | Save
+         | Load
           
      type State = Cell list list
      let cellToString (cell: Cell) =
@@ -25,23 +26,35 @@ module Game =
             | Dead (_, _) -> " "
             | Alive (_, _) -> "#"
      
- 
+    
+        
+    let isCellAlive (cell : Cell) =
+        match cell with
+        | Dead (x, y) -> false
+        | Alive (x, y)-> true
+        
     let gridHeight = 16
     let gridWidth = 16
     let init : State = List.init gridHeight (fun c -> List.init gridWidth (fun r -> Dead (c, r)))
     let rec update (msg: UserAction) (state : State) : State=
-         state
+         match msg with
+         | ChangeCellState cell (x, y) -> 
+         | Start ->
+         
+         
     let view (state : State) dispatch =
         printfn $"{state}"
         let squareWidth = 25.0
         let squareHeight = 25.0
         let buttonsInColumn = 16.0
         
-        let createSquare (cell: Cell)=
-            ToggleButton.create [
+        
+        let createButton (cell: Cell)=
+            Button.create [
                 Button.width(squareWidth)
                 Button.height(squareHeight)
                 Button.content(cellToString cell)
+                Button.onClick(fun _ -> dispatch UserAction.ChangeCellState cell)
                 
             ]
             
@@ -56,7 +69,7 @@ module Game =
                         WrapPanel.children[
                           for row in state do
                               for cel in row do
-                                createSquare cel
+                                createButton cel
                                
                     ]
              ]
