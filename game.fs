@@ -1,4 +1,4 @@
-﻿namespace DVA229_Lab4_AvaloniaElmish
+﻿namespace DVA229_Proj_AvaloniaElmish
 
 open System
 open System.Linq.Expressions
@@ -28,7 +28,6 @@ module Game =
         | Load
         | Reset
 
-    type Tile = { Cell: Cell; Coordinate: Position }
     type State = Cell[,]
 
     let cellToString (state: State) (coords: UserAction) =

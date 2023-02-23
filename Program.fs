@@ -1,4 +1,4 @@
-﻿namespace DVA229_Lab4_AvaloniaElmish
+﻿namespace DVA229_Proj_AvaloniaElmish
 
 open Elmish
 open Avalonia
