@@ -1,6 +1,11 @@
 ﻿namespace DVA229_Lab4_AvaloniaElmish
+open System
 open System.Linq.Expressions
+open Avalonia
+open Avalonia.Controls
 open Avalonia.Layout
+open Microsoft.FSharp.Collections
+open Microsoft.FSharp.Core
 open Microsoft.VisualBasic.CompilerServices
 
 module Game =
@@ -9,37 +14,69 @@ module Game =
     open Microsoft.FSharp.Collections
     
      type Cell =
-          Dead of int*int
-          |Alive of int*int
-          
-          
+          Dead 
+          |Alive
+     
+     type Position = {
+         X : int
+         Y : int
+     }
      type UserAction =
-         ChangeCellState of Cell
+         | ChangeCellState of Position
          | Start
          | Stop
          | Save
          | Load
-          
-     type State = Cell list list
-     let cellToString (cell: Cell) =
-            match cell with
-            | Dead (_, _) -> " "
-            | Alive (_, _) -> "#"
-     
+         | Reset
+     type Tile = {
+         Cell : Cell
+         Coordinate : Position
+     } 
+     type State = Tile[,]
+     let cellToString (state: State) (coords: UserAction)  =
+         match coords with
+         | ChangeCellState pos ->
+             match state[pos.X,pos.Y].Cell with
+                | Dead -> " "
+                | Alive -> "#"
+             
+                
+            
+                
     
         
     let isCellAlive (cell : Cell) =
         match cell with
-        | Dead (x, y) -> false
-        | Alive (x, y)-> true
-        
+        | Dead  -> false
+        | Alive -> true
+
     let gridHeight = 16
     let gridWidth = 16
-    let init : State = List.init gridHeight (fun c -> List.init gridWidth (fun r -> Dead (c, r)))
+   
+    let init : State = Array2D.init 16 16 (fun i j -> {Cell = Dead; Coordinate = {X = j; Y = i}})
+    
+    let flipCellState (coordinates : Position) (state: State) : State =
+       let newState : Tile[,] =
+           Array2D.init gridHeight gridWidth
+            (fun x y ->
+               if x = coordinates.X && y = coordinates.Y then
+                   match state[coordinates.X, coordinates.Y].Cell with
+                    | Alive -> {Cell = Dead; Coordinate = {X = coordinates.X; Y = coordinates.Y}}
+                    | Dead -> {Cell = Alive; Coordinate = {X = coordinates.X; Y = coordinates.Y}} 
+               else state[x, y])
+       newState
+      
+           
+           
+       
     let rec update (msg: UserAction) (state : State) : State=
          match msg with
-         | ChangeCellState cell (x, y) -> 
-         | Start ->
+         | Start ->  state
+         | Stop -> state
+         | Reset -> init
+         | ChangeCellState pos -> flipCellState pos state
+         
+           
          
          
     let view (state : State) dispatch =
@@ -49,28 +86,64 @@ module Game =
         let buttonsInColumn = 16.0
         
         
-        let createButton (cell: Cell)=
+        
+        let createButton (cellCoordinates : UserAction) =
             Button.create [
                 Button.width(squareWidth)
                 Button.height(squareHeight)
-                Button.content(cellToString cell)
-                Button.onClick(fun _ -> dispatch UserAction.ChangeCellState cell)
+                Button.content(cellToString state cellCoordinates)
+                Button.onClick(fun _ -> dispatch cellCoordinates)
                 
             ]
             
         DockPanel.create [
             DockPanel.children [
-                WrapPanel.create [
+                WrapPanel.create [               
                         WrapPanel.horizontalAlignment HorizontalAlignment.Center
                         WrapPanel.verticalAlignment VerticalAlignment.Center
                         WrapPanel.dock Dock.Bottom
                         WrapPanel.itemWidth squareWidth
                         WrapPanel.maxWidth (squareHeight * buttonsInColumn)
+                        
                         WrapPanel.children[
-                          for row in state do
-                              for cel in row do
-                                createButton cel
+                          for i = 0 to state.GetLength(0) - 1 do
+                              for j = 0 to state.GetLength(1) - 1 do
+                                  createButton (ChangeCellState {Position.X = i; Position.Y = j})
+                            
+                                
+                          Button.create[
+                              Button.width 50.0
+                              Button.height 25.0
+                              Button.content("Start")
+                          ]
+                          Button.create[
+                              Button.margin 25.0
+                              Button.width 50.0
+                              Button.height 25.0
+                              Button.content("Stop")
+                          ]
+                          Button.create[
+                              Button.margin 50.0
+                              Button.width 50.0
+                              Button.height 25.0
+                              Button.content("Reset")
+                              Button.onClick(fun _ -> dispatch UserAction.Reset)
+                          ]
+                         
+                          
+                         
                                
-                    ]
-             ]
-    ]    ]
+                ]
+            ]
+                
+                
+                
+        ]
+              
+       ]
+          
+      
+            
+                
+                
+    
