@@ -84,7 +84,7 @@ module Game =
             
         
         
-    let rec gameLoop (state : State) : State =
+    let generateNextGeneration (state : State) : State =
         let newGen: Cell[,] =
             Array2D.init gridHeight gridWidth (fun x y ->
                 match getLiveNeighbours state x y, state[x,y] with
@@ -95,7 +95,7 @@ module Game =
         
     let rec update (msg: UserAction) (state: State) : State =
         match msg with
-        | Start -> gameLoop state
+        | Start -> generateNextGeneration state
         | Stop -> state
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos state
