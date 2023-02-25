@@ -48,14 +48,13 @@ module Game =
         | Dead -> false
         | Alive -> true
 
-    let gridHeight = 16
-    let gridWidth = 16
+    let gridLength = 16
 
-    let init: State = Array2D.create gridWidth gridHeight Cell.Dead
+    let init: State = Array2D.create gridLength gridLength Cell.Dead
 
     let flipCellState (coordinates: Position) (state: State) : State =
         let newState: Cell[,] =
-            Array2D.init gridWidth gridHeight (fun x y ->
+            Array2D.init gridLength gridLength (fun x y ->
                 if x = coordinates.X && y = coordinates.Y then
                     match state[coordinates.X, coordinates.Y] with
                     | Alive -> Cell.Dead
@@ -66,31 +65,27 @@ module Game =
         newState
 
     let getNeighbours (state: State) (xCoord: int) (yCoord: int) : Cell list =
-        let rowRange = { max 0 (xCoord - 1) .. min (gridWidth - 1) (xCoord + 1) }
-        let colRange = { max 0 (yCoord - 1) .. min (gridHeight - 1) (yCoord + 1) }
+        let rowRange = { max 0 (xCoord - 1) .. min (gridLength - 1) (xCoord + 1) }
+        let colRange = { max 0 (yCoord - 1) .. min (gridLength - 1) (yCoord + 1) }
 
         [ for row in rowRange do
               for col in colRange do
                   if row <> xCoord || col <> yCoord then
                       yield state[row, col] ]
 
-    let getLiveNeighbours (state: State) (xCoord: int) (yCoord: int) : int =
-        let neighbours = getNeighbours state xCoord yCoord
-
-        let rec loop neighbours amount =
-            match neighbours with
-            | [] -> amount
-            | h :: t ->
-                match h with
-                | Alive -> loop t amount + 1
-                | Dead -> loop t amount
-
-        loop neighbours 0
+    let countAlive (cell: Cell) : int =
+        match cell with
+        | Alive -> 1
+        | Dead -> 0
+        
+    let sumLivingNeighbours (state: State) x y : int =
+        getNeighbours state x y
+        |> List.fold (fun acc cell -> acc + countAlive cell) 0
 
     let generateNextGeneration (state: State) : State =
         let newGen: Cell[,] =
-            Array2D.init gridWidth gridHeight (fun x y ->
-                match getLiveNeighbours state x y, state[x, y] with
+            Array2D.init gridLength gridLength (fun x y ->
+                match sumLivingNeighbours state x y, state[x, y] with
                 | x, Dead when x = 3 -> Alive
                 | x, Alive when x = 3 || x = 2 -> Alive
                 | _, _ -> Dead)
