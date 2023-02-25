@@ -14,12 +14,9 @@ open Avalonia.FuncUI.Hosts
 type MainWindow() as this =
     inherit HostWindow()
     do
-        base.Title <- "DVA229 Lab4"
-        base.Width <- 400.0
-        base.Height <- 400.0
-        
-        //this.VisualRoot.VisualRoot.Renderer.DrawFps <- true
-        //this.VisualRoot.VisualRoot.Renderer.DrawDirtyRects <- true
+        base.Title <- "DVA229 Project"
+        base.Width <- 500.0
+        base.Height <- 600.0
 
         Elmish.Program.mkSimple (fun () -> Game.init) Game.update Game.view
         |> Program.withHost this

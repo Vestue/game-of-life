@@ -29,6 +29,10 @@ module Game =
         | Load
         | Reset
 
+    type GridState =
+        | Running
+        | Stopped
+
     type State = Cell[,]
 
     let cellToString (state: State) (coords: UserAction) =
@@ -36,9 +40,8 @@ module Game =
         | ChangeCellState pos ->
             match state[pos.X, pos.Y] with
             | Dead -> " "
-            | Alive -> "#"
+            | Alive -> "■"
         | _ -> ""
-
 
     let isCellAlive (cell: Cell) =
         match cell with
@@ -102,18 +105,19 @@ module Game =
         | ChangeCellState pos -> flipCellState pos state
         | _ -> state
 
-    let squareWidth = 25.0
-    let squareHeight = 25.0
-    let buttonsInColumn = 16.0
-
-
     let view (state: State) dispatch =
         printfn $"{state}"
 
+        // Sizes for UI
+        let squareLength = 30.0
+        let buttonsInColumn = 16.0
+        let optionHeight = 30.0
+        let optionWidth = 60.0
+        
         let createButton (cellCoordinates: UserAction) =
             Button.create
-                [ Button.width squareWidth
-                  Button.height squareHeight
+                [ Button.width squareLength
+                  Button.height squareLength
                   Button.content (cellToString state cellCoordinates)
                   Button.onClick (fun _ -> dispatch cellCoordinates) ]
 
@@ -124,29 +128,28 @@ module Game =
                         [ WrapPanel.horizontalAlignment HorizontalAlignment.Center
                           WrapPanel.verticalAlignment VerticalAlignment.Center
                           WrapPanel.dock Dock.Bottom
-                          WrapPanel.itemWidth squareWidth
-                          WrapPanel.maxWidth (squareHeight * buttonsInColumn)
+                          WrapPanel.itemWidth squareLength
+                          WrapPanel.maxWidth (squareLength * buttonsInColumn)
 
                           WrapPanel.children[for i = 0 to state.GetLength(0) - 1 do
                                                  for j = 0 to state.GetLength(1) - 1 do
                                                      createButton (ChangeCellState { Position.X = i; Position.Y = j })
 
-
                                              Button.create
-                                                 [ Button.width 50.0
-                                                   Button.height 25.0
+                                                 [ Button.width optionWidth
+                                                   Button.height optionHeight
                                                    Button.content "Start"
                                                    Button.onClick (fun _ -> dispatch UserAction.Start) ]
 
                                              Button.create
-                                                 [ Button.margin 25.0
-                                                   Button.width 50.0
-                                                   Button.height 25.0
+                                                 [ Button.margin 35
+                                                   Button.width optionWidth
+                                                   Button.height optionHeight
                                                    Button.content "Stop" ]
 
                                              Button.create
-                                                 [ Button.margin 50.0
-                                                   Button.width 50.0
-                                                   Button.height 25.0
+                                                 [ Button.margin 70
+                                                   Button.width optionWidth
+                                                   Button.height optionHeight
                                                    Button.content "Reset"
                                                    Button.onClick (fun _ -> dispatch UserAction.Reset) ]] ] ] ]
