@@ -25,7 +25,7 @@ module Game =
     type Msg =
         | ChangeCellState of Position
         | Start
-        | Run
+        | Tick
         | Stop
         | Save
         | Load
@@ -48,28 +48,18 @@ module Game =
 
     let gridLength = 16
     
-    (*
-    let initTimer =
-        let timer = new Timer(5000.0)
-        timer.AutoReset <- true
-        timer.Elapsed.Add (fun _ ->
-           printfn "Running timer"
-           dispatch Run)
-        timer*)
-    
     let timer dispatch =
         let time = new Timer(1000.0)
-        time.Elapsed.Add (fun _ -> dispatch Run)
+        time.Elapsed.Add (fun _ -> dispatch Tick)
         time.Start()
         
-    let subscribe model =
-        printfn "Checking subscription"
-        [ if model.isRunning then
-            timer ]
+    // Setup the timer and connect it to the elmish model
+    //? 'model' has to be here.
+    let subscribe model = [ timer ]
         
     let initGrid = Array2D.create gridLength gridLength Cell.Dead
 
-    let init () = {grid = initGrid; isRunning = true}
+    let init () = {grid = initGrid; isRunning = false}
 
     let flipCellState (coordinates: Position) (state: State) : State =
         let newGrid: Cell[,] =
@@ -80,7 +70,7 @@ module Game =
                     | Dead -> Cell.Alive
                 else
                     state.grid[x, y])
-        {grid = newGrid; isRunning = state.isRunning}
+        { state with grid = newGrid }
 
     let getNeighbours (grid: Grid) (xCoord: int) (yCoord: int) : Cell list =
         // Use min and max to prevent cells at the edges from attempting
@@ -106,24 +96,21 @@ module Game =
         let newGen: Cell[,] =
             Array2D.init gridLength gridLength (fun x y ->
                 match sumLivingNeighbours state.grid x y with
-                | 3 ->
-                    printfn "Im alive"
-                    Alive
-                | 2 when isAlive state.grid[x,y] ->
-                    printfn "ALive"
-                    Alive
+                | 3 -> Alive
+                | 2 when isAlive state.grid[x,y] -> Alive
                 | _ -> Dead)
-        printfn $"isRunning = {state.isRunning}"
-        {grid = newGen; isRunning = state.isRunning}
+        { state with grid = newGen }
         
-    let update (msg: Msg) model =
+    let update (msg: Msg) (state: State) =
         match msg with
-        | Start -> { model with isRunning = true }
-        | Stop -> { model with isRunning = false }
-        | Run | Next -> (generateNextGeneration model)
-        | Reset -> { model with grid = initGrid }
-        | ChangeCellState pos -> (flipCellState pos model)
-        | _ -> model
+        | Start -> { state with isRunning = true }
+        | Stop -> { state with isRunning = false }
+        | Next -> generateNextGeneration state
+        | Tick when state.isRunning -> generateNextGeneration state
+        | Reset -> { state with grid = initGrid }
+        | ChangeCellState pos -> flipCellState pos state
+        | _ -> state
+        
     let view state dispatch =
         
         // Sizes for UI
