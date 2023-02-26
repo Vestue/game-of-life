@@ -29,6 +29,7 @@ module Game =
         | Stop
         | Save
         | Load
+        | Next
         | Reset
 
     type GridState =
@@ -44,10 +45,10 @@ module Game =
         | Alive -> "■"
         | Dead -> " "
 
-    let isCellAlive (cell: Cell) =
+    let isAlive (cell: Cell) =
         match cell with
-        | Dead -> false
         | Alive -> true
+        | _ -> false
 
     let gridLength = 16
     
@@ -92,10 +93,10 @@ module Game =
     let generateNextGeneration (state: State) : State =
         let newGen: Cell[,] =
             Array2D.init gridLength gridLength (fun x y ->
-                match sumLivingNeighbours state.grid x y, state.grid[x, y] with
-                | x, Dead when x = 3 -> Alive
-                | x, Alive when x = 3 || x = 2 -> Alive
-                | _, _ -> Dead)
+                match sumLivingNeighbours state.grid x y with
+                | 3 -> Alive
+                | 2 when isAlive state.grid[x,y] -> Alive
+                | _ -> Dead)
         {grid = newGen; timer = state.timer}
         
     let update (action: UserAction) (state: State) : State =
@@ -110,13 +111,14 @@ module Game =
         | Reset ->
             state.timer.Stop()
             init
+        | Next -> generateNextGeneration state
         | ChangeCellState pos -> flipCellState pos state
         | _ -> state
         
+    let isRunning (state: State) = state.timer.Enabled
 
     let view (state: State) dispatch =
-        state.timer.Elapsed.Add (fun _ -> dispatch Run)
-
+        
         // Sizes for UI
         let squareLength = 30.0
         let buttonsInColumn = 16.0
@@ -147,19 +149,32 @@ module Game =
                                              Button.create
                                                  [ Button.width optionWidth
                                                    Button.height optionHeight
+                                                   Button.margin (0.0, 10.0, 0.0, 0.0)
                                                    Button.content "Start"
-                                                   Button.onClick (fun _ -> dispatch Start) ]
+                                                   Button.onClick (fun _ ->
+                                                       // Check the running state to avoid adding
+                                                       // multiple event handles to the same timer.
+                                                       if not (isRunning state) then
+                                                           state.timer.Elapsed.Add (fun _ -> dispatch Run)
+                                                           dispatch Start)]
 
                                              Button.create
-                                                 [ Button.margin 35
+                                                 [ Button.margin (35.0, 10.0, 0.0, 0.0)
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Stop" 
                                                    Button.onClick (fun _ -> dispatch Stop) ]
 
                                              Button.create
-                                                 [ Button.margin 70
+                                                 [ Button.margin (70.0, 10.0, 0.0, 0.0)
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Reset"
-                                                   Button.onClick (fun _ -> dispatch Reset) ]] ] ] ]
+                                                   Button.onClick (fun _ -> dispatch Reset) ]
+                                             
+                                             Button.create
+                                                 [ Button.margin (105.0, 10.0, 0.0, 0.0)
+                                                   Button.width optionWidth
+                                                   Button.height optionHeight
+                                                   Button.content "Next"
+                                                   Button.onClick (fun _ -> dispatch Next) ]] ] ] ]
