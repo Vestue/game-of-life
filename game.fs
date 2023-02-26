@@ -22,23 +22,19 @@ module Game =
 
     type Position = { X: int; Y: int }
 
-    type UserAction =
+    type Msg =
         | ChangeCellState of Position
         | Start
-        | Run
+        | Tick
         | Stop
         | Save
         | Load
         | Next
         | Reset
-
-    type GridState =
-        | Running
-        | Stopped
         
     type Grid = Cell[,]
 
-    type State = { grid: Grid; timer: Timer}
+    type State = { grid: Grid; isRunning: bool}
 
     let cellToString (cell: Cell) =
         match cell with
@@ -52,12 +48,18 @@ module Game =
 
     let gridLength = 16
     
-    let initTimer =
-        let timer = new Timer(1000.0)
-        timer.AutoReset <- true
-        timer
+    let timer dispatch =
+        let time = new Timer(1000.0)
+        time.Elapsed.Add (fun _ -> dispatch Tick)
+        time.Start()
+        
+    // Setup the timer and connect it to the elmish model
+    //? 'model' has to be here.
+    let subscribe model = [ timer ]
+        
+    let initGrid = Array2D.create gridLength gridLength Cell.Dead
 
-    let init: State = {grid = Array2D.create gridLength gridLength Cell.Dead; timer = initTimer}
+    let init () = {grid = initGrid; isRunning = false}
 
     let flipCellState (coordinates: Position) (state: State) : State =
         let newGrid: Cell[,] =
@@ -68,7 +70,7 @@ module Game =
                     | Dead -> Cell.Alive
                 else
                     state.grid[x, y])
-        {grid = newGrid; timer = state.timer}
+        { state with grid = newGrid }
 
     let getNeighbours (grid: Grid) (xCoord: int) (yCoord: int) : Cell list =
         // Use min and max to prevent cells at the edges from attempting
@@ -97,27 +99,19 @@ module Game =
                 | 3 -> Alive
                 | 2 when isAlive state.grid[x,y] -> Alive
                 | _ -> Dead)
-        {grid = newGen; timer = state.timer}
+        { state with grid = newGen }
         
-    let update (action: UserAction) (state: State) : State =
-        match action with
-        | Start ->
-            state.timer.Start()
-            state
-        | Stop ->
-            state.timer.Stop()
-            state
-        | Run -> generateNextGeneration state
-        | Reset ->
-            state.timer.Stop()
-            init
+    let update (msg: Msg) (state: State) =
+        match msg with
+        | Start -> { state with isRunning = true }
+        | Stop -> { state with isRunning = false }
         | Next -> generateNextGeneration state
+        | Tick when state.isRunning -> generateNextGeneration state
+        | Reset -> { state with grid = initGrid }
         | ChangeCellState pos -> flipCellState pos state
         | _ -> state
         
-    let isRunning (state: State) = state.timer.Enabled
-
-    let view (state: State) dispatch =
+    let view state dispatch =
         
         // Sizes for UI
         let squareLength = 30.0
@@ -151,12 +145,7 @@ module Game =
                                                    Button.height optionHeight
                                                    Button.margin (0.0, 10.0, 0.0, 0.0)
                                                    Button.content "Start"
-                                                   Button.onClick (fun _ ->
-                                                       // Check the running state to avoid adding
-                                                       // multiple event handles to the same timer.
-                                                       if not (isRunning state) then
-                                                           state.timer.Elapsed.Add (fun _ -> dispatch Run)
-                                                           dispatch Start)]
+                                                   Button.onClick (fun _ -> dispatch Start)]
 
                                              Button.create
                                                  [ Button.margin (35.0, 10.0, 0.0, 0.0)

@@ -18,7 +18,8 @@ type MainWindow() as this =
         base.Width <- 500.0
         base.Height <- 600.0
 
-        Elmish.Program.mkSimple (fun () -> Game.init) Game.update Game.view
+        Elmish.Program.mkSimple Game.init Game.update Game.view
+        |> Program.withSubscription Game.subscribe
         |> Program.withHost this
         |> Program.run
 
