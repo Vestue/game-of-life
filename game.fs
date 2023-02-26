@@ -59,7 +59,7 @@ module Game =
         
     let initGrid = Array2D.create gridLength gridLength Cell.Dead
 
-    let init () = {grid = initGrid; isRunning = false}
+    let init = {grid = initGrid; isRunning = false}
 
     let flipCellState (coordinates: Position) (state: State) : State =
         let newGrid: Cell[,] =
@@ -107,7 +107,7 @@ module Game =
         | Stop -> { state with isRunning = false }
         | Next -> generateNextGeneration state
         | Tick when state.isRunning -> generateNextGeneration state
-        | Reset -> { state with grid = initGrid }
+        | Reset -> init
         | ChangeCellState pos -> flipCellState pos state
         | _ -> state
         
