@@ -163,8 +163,7 @@ module Game =
       
         
         
-    let loadModel() =
-        
+    
     
         
     
@@ -188,7 +187,6 @@ module Game =
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos model
         | Save -> saveModel model
-        | Load -> loadModel()
         | _ -> model
         
     let view model dispatch =
