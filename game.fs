@@ -64,11 +64,11 @@ module Game =
         | Alive -> "■"
         | Dead -> " "
         
-    let cellFromString (string: String) =
-        match string with
-        | "■" -> Ok Alive
-        | " " -> Ok Dead
-        | _ -> Error "Could not read cell from string"
+    let cellFromString (character: char) =
+        match character with
+        | '■' -> Alive
+        | ' ' -> Dead
+        | _ -> failwith "Could not read cell from string"
 
     let isAlive (cell: Cell) =
         match cell with
@@ -160,7 +160,33 @@ module Game =
         File.WriteAllText(filePath, fileContent)
         model
         
-      
+    let translateStringToGrid (str : char list)  =
+        
+        let loadedGrid =
+            Array2D.init gridLength gridLength (fun x y ->
+                let index = x * gridLength + y
+                match cellFromString str[index] with
+                | Alive -> Alive
+                |Dead -> Dead)
+        loadedGrid
+        
+    let loadModel() =
+        let fileName = "Save9903"
+        let filePath = Path.Combine(folderPath, fileName)
+        let modelString = File.ReadAllLines(filePath) |> Seq.toList
+        let str = modelString.Head
+        let loadedGrid = translateStringToGrid (Seq.toList str)
+        let model = {grid = loadedGrid; state = Stopped; steps = Infinite}
+        model
+        
+       
+        
+                
+            
+          
+                
+        
+        
         
         
     
@@ -186,6 +212,7 @@ module Game =
         | Tick when isRunning model -> generateNextGeneration model
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos model
+        | Load -> loadModel()
         | Save -> saveModel model
         | _ -> model
         
