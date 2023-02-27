@@ -2,9 +2,11 @@
 
 open System
 open System.Linq.Expressions
+open System.Net.Mime
 open System.Timers
 open Avalonia
 open Avalonia.Controls
+open Avalonia.Input
 open Avalonia.Layout
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Core
@@ -13,6 +15,9 @@ open Microsoft.VisualBasic.CompilerServices
 module Game =
     open Avalonia.Controls
     open Avalonia.FuncUI.DSL
+    open Avalonia.Controls.ApplicationLifetimes
+    open Avalonia.Dialogs
+    open System.IO
 
     open Microsoft.FSharp.Collections
 
@@ -37,6 +42,7 @@ module Game =
         
     type Grid = Cell[,]
     
+    
     type Steps =
         | Infinite
         | Amount of int
@@ -45,6 +51,8 @@ module Game =
         | Stopped
         | Running 
     type Model = { grid: Grid; state: State; steps: Steps }
+    
+    let folderPath = __SOURCE_DIRECTORY__ + "/saves"
     
     let stepsToString (steps: Steps) =
         match steps with
@@ -131,15 +139,35 @@ module Game =
         
     let GridToString (model: Model) =
         model.grid
-        |> Array2D.map(fun cell -> if cell = Alive then "1" else "0")
+        |> Array2D.map(fun cell -> cellToString cell)
         |> Seq.cast<string> |> Seq.fold (fun l n -> n :: l) []
         |> List.rev
         |> List.fold(+)""
         
-    let saveState (model: Model) =
-        let stringToSave = GridToString model
-        printfn $"{stringToSave}"
+    let saveFileToFolder stringToSave fileName folderPath =
+        let filePath = Path.Combine(folderPath, fileName)
+        File.WriteAllText(filePath, stringToSave)
+    let getFileName ()=
+        let nameStart = "Save"
+        let rand = Random()
+        let id = rand.Next(0, 10000)
+        let fileName = nameStart + id.ToString()
+        fileName
+    
+    let saveModel (model : Model) =
+        let fileContent = GridToString model
+        let filePath = Path.Combine(folderPath, getFileName())
+        File.WriteAllText(filePath, fileContent)
         model
+        
+      
+        
+        
+    let loadModel() =
+        
+    
+        
+    
         
     let toggleStepState (model: Model) =
         match model.steps with
@@ -159,7 +187,8 @@ module Game =
         | Tick when isRunning model -> generateNextGeneration model
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos model
-        | Save -> saveState model
+        | Save -> saveModel model
+        | Load -> loadModel()
         | _ -> model
         
     let view model dispatch =
@@ -224,4 +253,10 @@ module Game =
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Save"
-                                                   Button.onClick (fun _ -> dispatch Save) ]] ] ] ]
+                                                   Button.onClick (fun _ -> dispatch Save) ]
+                                             Button.create
+                                                 [ Button.margin (marginBase * 4.0, 10.0, 0.0, 0.0)
+                                                   Button.width optionWidth
+                                                   Button.height optionHeight
+                                                   Button.content "Load"
+                                                   Button.onClick (fun _ -> dispatch Load) ]] ] ] ]
