@@ -78,12 +78,11 @@ module Game =
         | ToggleInfinite -> "∞"
         | _ -> ""
         
-    //TODO: REPLACE failwith with Result error
     let cellFromString (character: char) =
         match character with
-        | '■' -> Alive
-        | ' ' -> Dead
-        | _ -> failwith "Could not read cell from string"
+        | '■' -> Ok Alive
+        | ' ' -> Ok Dead
+        | _ -> Error "Could not read cell from string"
 
     let isAlive (cell: Cell) =
         match cell with
@@ -177,20 +176,19 @@ module Game =
     let saveModel (model : Model) =
         let fileContent = GridToString model
         match model.name with
-        | "" -> failwith "File needs to have a name"
+        | "" -> Error "File needs to have a name"
         | _ -> 
             let filePath = Path.Combine(folderPath, model.name)
             File.WriteAllText(filePath, fileContent)
-        model
+            Ok model
         
     let translateStringToGrid (str : char list)  =
-        
         let loadedGrid =
             Array2D.init gridLength gridLength (fun x y ->
                 let index = x * gridLength + y
                 match cellFromString str[index] with
-                | Alive -> Alive
-                | Dead -> Dead)
+                | Ok cell -> cell
+                | Error _ -> Dead)
         loadedGrid
         
     let loadModel (model : Model) =
@@ -220,7 +218,10 @@ module Game =
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos model
         | Load -> loadModel model
-        | Save -> saveModel model
+        | Save ->
+            match (saveModel model) with
+            | Ok newModel -> newModel
+            | Error _ -> model
         | ChangeModelName newString ->
             {model with name = newString}
         | Increase -> increaseSteps model
