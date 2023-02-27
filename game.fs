@@ -69,6 +69,19 @@ module Game =
         | "■" -> Ok Alive
         | " " -> Ok Dead
         | _ -> Error "Could not read cell from string"
+        
+    let msgToString (msg: Msg) =
+        match msg with
+        | Start -> "Start"
+        | Stop -> "Stop"
+        | Save -> "Save"
+        | Load -> "Load"
+        | Next -> "Next"
+        | Reset -> "Reset"
+        | Increase -> "Increase"
+        | Decrease -> "Decrease"
+        | ToggleInfinite -> "∞"
+        | _ -> ""
 
     let isAlive (cell: Cell) =
         match cell with
@@ -160,14 +173,6 @@ module Game =
         File.WriteAllText(filePath, fileContent)
         model
         
-      
-        
-        
-    
-    
-        
-    
-        
     let toggleStepState (model: Model) =
         match model.steps with
         | Infinite -> { model with steps = Amount 0 }
@@ -189,6 +194,7 @@ module Game =
         | Save -> saveModel model
         | _ -> model
         
+        
     let view model dispatch =
         
         // Sizes for UI
@@ -204,7 +210,11 @@ module Game =
                   Button.height squareLength
                   Button.content (cellToString model.grid[pos.X, pos.Y])
                   Button.onClick (fun _ -> dispatch (ChangeCellState pos)) ]
-
+                
+        let getIndexOfMsg (toFind: Msg) (list: Msg list) =
+                list
+                |> List.findIndex toFind.Equals
+                |> float
 
         DockPanel.create
             [ DockPanel.children
@@ -219,42 +229,12 @@ module Game =
                                                  for j = 0 to gridLength - 1 do
                                                      createCellButton { X = i; Y = j }
 
-                                             Button.create
-                                                 [ Button.width optionWidth
-                                                   Button.height optionHeight
-                                                   Button.margin (0.0, 10.0, 0.0, 0.0)
-                                                   Button.content "Start"
-                                                   Button.onClick (fun _ -> dispatch Start)]
-
-                                             Button.create
-                                                 [ Button.margin (marginBase, 10.0, 0.0, 0.0)
-                                                   Button.width optionWidth
-                                                   Button.height optionHeight
-                                                   Button.content "Stop" 
-                                                   Button.onClick (fun _ -> dispatch Stop) ]
-
-                                             Button.create
-                                                 [ Button.margin (marginBase * 2.0, 10.0, 0.0, 0.0)
-                                                   Button.width optionWidth
-                                                   Button.height optionHeight
-                                                   Button.content "Reset"
-                                                   Button.onClick (fun _ -> dispatch Reset) ]
-                                             
-                                             Button.create
-                                                 [ Button.margin (marginBase * 3.0, 10.0, 0.0, 0.0)
-                                                   Button.width optionWidth
-                                                   Button.height optionHeight
-                                                   Button.content "Next"
-                                                   Button.onClick (fun _ -> dispatch Next) ]
-                                             Button.create
-                                                 [ Button.margin (marginBase * 4.0, 10.0, 0.0, 0.0)
-                                                   Button.width optionWidth
-                                                   Button.height optionHeight
-                                                   Button.content "Save"
-                                                   Button.onClick (fun _ -> dispatch Save) ]
-                                             Button.create
-                                                 [ Button.margin (marginBase * 4.0, 10.0, 0.0, 0.0)
-                                                   Button.width optionWidth
-                                                   Button.height optionHeight
-                                                   Button.content "Load"
-                                                   Button.onClick (fun _ -> dispatch Load) ]] ] ] ]
+                                             let buttons = [ Start; Stop; Reset; Next; Save; Load ]
+                                             for msg in buttons do
+                                                 let margin = marginBase * getIndexOfMsg msg buttons
+                                                 Button.create
+                                                     [ Button.width optionWidth
+                                                       Button.height optionHeight
+                                                       Button.margin (margin, 10.0, 0.0, 0.0)
+                                                       Button.content (msgToString msg)
+                                                       Button.onClick (fun _ -> dispatch msg)]] ] ] ]
