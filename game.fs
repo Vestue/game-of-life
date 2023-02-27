@@ -29,6 +29,7 @@ module Game =
 
     type Msg =
         | ChangeCellState of Position
+        | ChangeModelName of String
         | Start
         | Tick
         | Stop
@@ -50,7 +51,7 @@ module Game =
     type State =
         | Stopped
         | Running 
-    type Model = { grid: Grid; state: State; steps: Steps }
+    type Model = { grid: Grid; state: State; steps: Steps; name: String }
     
     let folderPath = __SOURCE_DIRECTORY__ + "/saves"
     
@@ -102,7 +103,7 @@ module Game =
         
     let initGrid = Array2D.create gridLength gridLength Cell.Dead
 
-    let init = {grid = initGrid; state = Stopped; steps = Infinite}
+    let init = {grid = initGrid; state = Stopped; steps = Infinite; name = ""}
 
     let flipCellState (coordinates: Position) (model: Model) : Model =
         let newGrid: Cell[,] =
@@ -133,7 +134,7 @@ module Game =
         
     let decreaseStepsIfNeeded (model: Model) =
         match model.steps with
-        | Amount x when x <= 1 -> { grid = model.grid; state = Stopped; steps = Amount 0 }
+        | Amount x when x <= 1 -> { grid = model.grid; state = Stopped; steps = Amount 0; name = model.name }
         | Amount x -> { model with steps = Amount (x - 1) }
         | _ -> model
         
@@ -175,8 +176,11 @@ module Game =
     
     let saveModel (model : Model) =
         let fileContent = GridToString model
-        let filePath = Path.Combine(folderPath, getFileName())
-        File.WriteAllText(filePath, fileContent)
+        match model.name with
+        | "" -> failwith "File needs to have a name"
+        | _ -> 
+            let filePath = Path.Combine(folderPath, model.name)
+            File.WriteAllText(filePath, fileContent)
         model
         
     let translateStringToGrid (str : char list)  =
@@ -186,16 +190,15 @@ module Game =
                 let index = x * gridLength + y
                 match cellFromString str[index] with
                 | Alive -> Alive
-                |Dead -> Dead)
+                | Dead -> Dead)
         loadedGrid
         
-    let loadModel() =
-        let fileName = "Save9903"
-        let filePath = Path.Combine(folderPath, fileName)
+    let loadModel (model : Model) =
+        let filePath = Path.Combine(folderPath, model.name)
         let modelString = File.ReadAllLines(filePath) |> Seq.toList
         let str = modelString.Head
         let loadedGrid = translateStringToGrid (Seq.toList str)
-        let model = {grid = loadedGrid; state = Stopped; steps = Infinite}
+        let model = {grid = loadedGrid; state = Stopped; steps = Infinite; name = model.name}
         model
         
     let toggleStepState (model: Model) =
@@ -216,8 +219,10 @@ module Game =
         | Tick when isRunning model -> generateNextGeneration model
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos model
-        | Load -> loadModel()
+        | Load -> loadModel model
         | Save -> saveModel model
+        | ChangeModelName newString ->
+            {model with name = newString}
         | Increase -> increaseSteps model
         | Decrease -> decreaseStepsIfNeeded model
         | ToggleInfinite -> toggleStepState model
@@ -230,8 +235,8 @@ module Game =
         let squareLength = 30.0
         let buttonsInColumn = 16.0
         let optionHeight = 30.0
-        let optionWidth = 60.0
-        let marginBase = 35.0
+        let optionWidth = 55.0
+        let marginBase = 30.0
         
         let createCellButton (pos: Position) =
             Button.create
@@ -265,8 +270,16 @@ module Game =
                           WrapPanel.children[for i = 0 to gridLength - 1 do
                                                  for j = 0 to gridLength - 1 do
                                                      createCellButton { X = i; Y = j }
-
+                                                     
+                                             
                                              let buttons = [ Start; Stop; Reset; Next; Save; Load; Decrease ]
+                                             TextBox.create [
+                                                TextBox.margin(-(marginBase), 10.0, 0.0, 0.0)
+                                                TextBox.width optionWidth
+                                                TextBox.height optionHeight
+                                                TextBox.text model.name
+                                                TextBox.onTextChanged (ChangeModelName >> dispatch)
+                                             ]
                                              for msg in buttons do
                                                  let margin = marginBase * getIndexOfMsg msg buttons
                                                  createBottomButton (msgToString msg) margin (fun _ -> dispatch msg)
