@@ -101,6 +101,20 @@ module Game =
                 | _ -> Dead)
         { state with grid = newGen }
         
+        
+    let GridToString (state: State) =
+        state.grid
+        |> Array2D.map(fun cell -> if cell = Alive then "1" else "0")
+        |> Seq.cast<string> |> Seq.fold (fun l n -> n :: l) []
+        |> List.rev
+        |> List.fold(+)""
+        
+    let saveState (state: State) =
+        let stringToSave = GridToString state
+        printfn $"{stringToSave}"
+        state
+        
+        
     let update (msg: Msg) (state: State) =
         match msg with
         | Start -> { state with isRunning = true }
@@ -109,6 +123,7 @@ module Game =
         | Tick when state.isRunning -> generateNextGeneration state
         | Reset -> init
         | ChangeCellState pos -> flipCellState pos state
+        | Save -> saveState state
         | _ -> state
         
     let view state dispatch =
@@ -166,4 +181,10 @@ module Game =
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Next"
-                                                   Button.onClick (fun _ -> dispatch Next) ]] ] ] ]
+                                                   Button.onClick (fun _ -> dispatch Next) ]
+                                             Button.create
+                                                 [ Button.margin (105.0, 10.0, 0.0, 0.0)
+                                                   Button.width optionWidth
+                                                   Button.height optionHeight
+                                                   Button.content "Save"
+                                                   Button.onClick (fun _ -> dispatch Save) ]] ] ] ]
