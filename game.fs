@@ -31,15 +31,36 @@ module Game =
         | Load
         | Next
         | Reset
+        | Increase
+        | Decrease
+        | ToggleInfinite
         
     type Grid = Cell[,]
+    
+    type Steps =
+        | Infinite
+        | Amount of int
 
-    type State = { grid: Grid; isRunning: bool}
+    type State =
+        | Stopped
+        | Running 
+    type Model = { grid: Grid; state: State; steps: Steps }
+    
+    let stepsToString (steps: Steps) =
+        match steps with
+        | Infinite -> "∞"
+        | Amount x -> $"{x}"
 
     let cellToString (cell: Cell) =
         match cell with
         | Alive -> "■"
         | Dead -> " "
+        
+    let cellFromString (string: String) =
+        match string with
+        | "■" -> Ok Alive
+        | " " -> Ok Dead
+        | _ -> Error "Could not read cell from string"
 
     let isAlive (cell: Cell) =
         match cell with
@@ -59,18 +80,18 @@ module Game =
         
     let initGrid = Array2D.create gridLength gridLength Cell.Dead
 
-    let init = {grid = initGrid; isRunning = false}
+    let init = {grid = initGrid; state = Stopped; steps = Infinite}
 
-    let flipCellState (coordinates: Position) (state: State) : State =
+    let flipCellState (coordinates: Position) (model: Model) : Model =
         let newGrid: Cell[,] =
             Array2D.init gridLength gridLength (fun x y ->
                 if x = coordinates.X && y = coordinates.Y then
-                    match state.grid[coordinates.X, coordinates.Y] with
+                    match model.grid[coordinates.X, coordinates.Y] with
                     | Alive -> Cell.Dead
                     | Dead -> Cell.Alive
                 else
-                    state.grid[x, y])
-        { state with grid = newGrid }
+                    model.grid[x, y])
+        { model with grid = newGrid }
 
     let getNeighbours (grid: Grid) (xCoord: int) (yCoord: int) : Cell list =
         // Use min and max to prevent cells at the edges from attempting
@@ -82,7 +103,13 @@ module Game =
               for col in colRange do
                   if row <> xCoord || col <> yCoord then
                       yield grid[row, col] ]
-
+        
+    let lowerRunningCountIfNeeded (model: Model) =
+        match model.state, model.steps with
+        | Running, Amount x when x <= 1 -> { grid = model.grid; state = Stopped; steps = Amount 0 }
+        | Running, Amount x -> { model with steps = Amount (x - 1) }
+        | _ -> model
+        
     let countAlive (cell: Cell) : int =
         match cell with
         | Alive -> 1
@@ -92,53 +119,63 @@ module Game =
         getNeighbours grid x y
         |> List.fold (fun acc cell -> acc + countAlive cell) 0
 
-    let generateNextGeneration (state: State) : State =
+    let generateNextGeneration (model: Model) : Model =
         let newGen: Cell[,] =
             Array2D.init gridLength gridLength (fun x y ->
-                match sumLivingNeighbours state.grid x y with
+                match sumLivingNeighbours model.grid x y with
                 | 3 -> Alive
-                | 2 when isAlive state.grid[x,y] -> Alive
+                | 2 when isAlive model.grid[x,y] -> Alive
                 | _ -> Dead)
-        { state with grid = newGen }
+        lowerRunningCountIfNeeded { model with grid = newGen }
         
         
-    let GridToString (state: State) =
-        state.grid
+    let GridToString (model: Model) =
+        model.grid
         |> Array2D.map(fun cell -> if cell = Alive then "1" else "0")
         |> Seq.cast<string> |> Seq.fold (fun l n -> n :: l) []
         |> List.rev
         |> List.fold(+)""
         
-    let saveState (state: State) =
-        let stringToSave = GridToString state
+    let saveState (model: Model) =
+        let stringToSave = GridToString model
         printfn $"{stringToSave}"
-        state
+        model
         
+    let toggleStepState (model: Model) =
+        match model.steps with
+        | Infinite -> { model with steps = Amount 0 }
+        | _ -> { model with steps = Infinite }
         
-    let update (msg: Msg) (state: State) =
+    let isRunning (model: Model) =
+        match model.state with
+        | Running -> true
+        | _ -> false
+        
+    let update (msg: Msg) (model: Model) =
         match msg with
-        | Start -> { state with isRunning = true }
-        | Stop -> { state with isRunning = false }
-        | Next -> generateNextGeneration state
-        | Tick when state.isRunning -> generateNextGeneration state
+        | Start -> { model with state = Running }
+        | Stop -> { model with state = Stopped }
+        | Next -> generateNextGeneration model
+        | Tick when isRunning model -> generateNextGeneration model
         | Reset -> init
-        | ChangeCellState pos -> flipCellState pos state
-        | Save -> saveState state
-        | _ -> state
+        | ChangeCellState pos -> flipCellState pos model
+        | Save -> saveState model
+        | _ -> model
         
-    let view state dispatch =
+    let view model dispatch =
         
         // Sizes for UI
         let squareLength = 30.0
         let buttonsInColumn = 16.0
         let optionHeight = 30.0
         let optionWidth = 60.0
+        let marginBase = 35.0
         
         let createCellButton (pos: Position) =
             Button.create
                 [ Button.width squareLength
                   Button.height squareLength
-                  Button.content (cellToString state.grid[pos.X, pos.Y])
+                  Button.content (cellToString model.grid[pos.X, pos.Y])
                   Button.onClick (fun _ -> dispatch (ChangeCellState pos)) ]
 
 
@@ -163,27 +200,27 @@ module Game =
                                                    Button.onClick (fun _ -> dispatch Start)]
 
                                              Button.create
-                                                 [ Button.margin (35.0, 10.0, 0.0, 0.0)
+                                                 [ Button.margin (marginBase, 10.0, 0.0, 0.0)
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Stop" 
                                                    Button.onClick (fun _ -> dispatch Stop) ]
 
                                              Button.create
-                                                 [ Button.margin (70.0, 10.0, 0.0, 0.0)
+                                                 [ Button.margin (marginBase * 2.0, 10.0, 0.0, 0.0)
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Reset"
                                                    Button.onClick (fun _ -> dispatch Reset) ]
                                              
                                              Button.create
-                                                 [ Button.margin (105.0, 10.0, 0.0, 0.0)
+                                                 [ Button.margin (marginBase * 3.0, 10.0, 0.0, 0.0)
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Next"
                                                    Button.onClick (fun _ -> dispatch Next) ]
                                              Button.create
-                                                 [ Button.margin (105.0, 10.0, 0.0, 0.0)
+                                                 [ Button.margin (marginBase * 4.0, 10.0, 0.0, 0.0)
                                                    Button.width optionWidth
                                                    Button.height optionHeight
                                                    Button.content "Save"
