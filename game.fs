@@ -72,8 +72,8 @@ module Game =
         | Load -> "Load"
         | Next -> "Next"
         | Reset -> "Reset"
-        | Increase -> "Increase"
-        | Decrease -> "Decrease"
+        | Increase -> "+"
+        | Decrease -> "-"
         | ToggleInfinite -> "∞"
         | _ -> ""
         
@@ -126,10 +126,15 @@ module Game =
                   if row <> xCoord || col <> yCoord then
                       yield grid[row, col] ]
         
-    let lowerRunningCountIfNeeded (model: Model) =
-        match model.state, model.steps with
-        | Running, Amount x when x <= 1 -> { grid = model.grid; state = Stopped; steps = Amount 0 }
-        | Running, Amount x -> { model with steps = Amount (x - 1) }
+    let increaseSteps (model: Model) =
+        match model.steps with
+        | Amount x -> { model with steps = Amount (x + 1) }
+        | _ -> { model with steps = Amount 1 }
+        
+    let decreaseStepsIfNeeded (model: Model) =
+        match model.steps with
+        | Amount x when x <= 1 -> { grid = model.grid; state = Stopped; steps = Amount 0 }
+        | Amount x -> { model with steps = Amount (x - 1) }
         | _ -> model
         
     let countAlive (cell: Cell) : int =
@@ -148,7 +153,7 @@ module Game =
                 | 3 -> Alive
                 | 2 when isAlive model.grid[x,y] -> Alive
                 | _ -> Dead)
-        lowerRunningCountIfNeeded { model with grid = newGen }
+        decreaseStepsIfNeeded { model with grid = newGen }
         
         
     let GridToString (model: Model) =
@@ -213,6 +218,9 @@ module Game =
         | ChangeCellState pos -> flipCellState pos model
         | Load -> loadModel()
         | Save -> saveModel model
+        | Increase -> increaseSteps model
+        | Decrease -> decreaseStepsIfNeeded model
+        | ToggleInfinite -> toggleStepState model
         | _ -> model
         
         
@@ -232,6 +240,14 @@ module Game =
                   Button.content (cellToString model.grid[pos.X, pos.Y])
                   Button.onClick (fun _ -> dispatch (ChangeCellState pos)) ]
                 
+        let createBottomButton (content: String) (margin: float) handle =
+            Button.create
+                [   Button.width optionWidth
+                    Button.height optionHeight
+                    Button.margin (margin, 10.0, 0.0, 0.0)
+                    Button.content content
+                    Button.onClick handle ]
+                
         let getIndexOfMsg (toFind: Msg) (list: Msg list) =
                 list
                 |> List.findIndex toFind.Equals
@@ -250,12 +266,12 @@ module Game =
                                                  for j = 0 to gridLength - 1 do
                                                      createCellButton { X = i; Y = j }
 
-                                             let buttons = [ Start; Stop; Reset; Next; Save; Load ]
+                                             let buttons = [ Start; Stop; Reset; Next; Save; Load; Decrease ]
                                              for msg in buttons do
                                                  let margin = marginBase * getIndexOfMsg msg buttons
-                                                 Button.create
-                                                     [ Button.width optionWidth
-                                                       Button.height optionHeight
-                                                       Button.margin (margin, 10.0, 0.0, 0.0)
-                                                       Button.content (msgToString msg)
-                                                       Button.onClick (fun _ -> dispatch msg)]] ] ] ]
+                                                 createBottomButton (msgToString msg) margin (fun _ -> dispatch msg)
+                                                 
+                                             createBottomButton (stepsToString model.steps) (marginBase * 7.0) (fun _ -> dispatch ToggleInfinite)
+                                             createBottomButton (msgToString Increase) (marginBase * 8.0) (fun _ -> dispatch Increase)
+                                            
+                                             ] ] ] ]

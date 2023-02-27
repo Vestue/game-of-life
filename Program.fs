@@ -15,7 +15,7 @@ type MainWindow() as this =
     inherit HostWindow()
     do
         base.Title <- "DVA229 Project"
-        base.Width <- 500.0
+        base.Width <- 700.0
         base.Height <- 600.0
 
         Elmish.Program.mkSimple (fun _ -> Game.init) Game.update Game.view
