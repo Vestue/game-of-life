@@ -167,13 +167,11 @@ module Game =
         decreaseStepsIfNeeded { model with grid = newGen }
 
 
-    let GridToString (model: Model) =
+    let gridToString (model: Model) =
         model.grid
-        |> Array2D.map (fun cell -> cellToString cell)
+        |> Array2D.map cellToString
         |> Seq.cast<string>
-        |> Seq.fold (fun l n -> n :: l) []
-        |> List.rev
-        |> List.fold (+) ""
+        |> Seq.fold (fun acc n -> acc + n) ""
 
     let folderPath = __SOURCE_DIRECTORY__ + "/saves"
 
@@ -187,7 +185,7 @@ module Game =
         match model.name with
         | "" -> Error "File needs to have a name"
         | _ ->
-            saveStringAsFile (GridToString model) (getFullFileName model.name)
+            saveStringAsFile (gridToString model) (getFullFileName model.name)
             Ok { model with name = "" } // Clear the filename to give feedback to the user that it has been saved
 
     let translateStringToGrid (string: String) =
