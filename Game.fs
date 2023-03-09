@@ -11,41 +11,13 @@ open System.IO
 
 module Game =
 
-    let stepsToString (steps: Steps) =
-        match steps with
-        | Infinite -> "∞"
-        | Amount x -> $"{x}"
-
-    let cellToString (cell: Cell) =
-        match cell with
-        | Alive -> "■"
-        | Dead -> " "
-
-    let msgToString (msg: Message) =
-        match msg with
-        | Start -> "Start"
-        | Stop -> "Stop"
-        | Save -> "Save"
-        | Load -> "Load"
-        | Next -> "Next"
-        | Reset -> "Reset"
-        | Increase -> "+"
-        | Decrease -> "-"
-        | ToggleInfinite -> "∞"
-        | _ -> ""
-
-    let cellFromString (character: char) =
-        match character with
-        | '■' -> Ok Alive
-        | ' ' -> Ok Dead
-        | _ -> Error "Could not read cell from string"
+    let gridLength = 16
 
     let isAlive (cell: Cell) =
         match cell with
         | Alive -> true
         | _ -> false
 
-    let gridLength = 16
 
     let timer dispatch =
         let time = new Timer(1000.0)
@@ -120,13 +92,6 @@ module Game =
 
         decreaseStepsIfNeeded { model with grid = newGen }
 
-
-    let gridToString (model: Model) =
-        model.grid
-        |> Array2D.map cellToString
-        |> Seq.cast<string>
-        |> Seq.fold (fun acc n -> acc + n) ""
-
     let folderPath = __SOURCE_DIRECTORY__ + "/saves"
 
     let saveStringAsFile stringToSave fileName =
@@ -139,24 +104,14 @@ module Game =
         match model.name with
         | "" -> Error "File needs to have a name"
         | _ ->
-            saveStringAsFile (gridToString model) (getFullFileName model.name)
+            saveStringAsFile (Parse.gridToString model.grid) (getFullFileName model.name)
             Ok { model with name = "" } // Clear the filename to give feedback to the user that it has been saved
 
-    let translateStringToGrid (string: String) =
-        let grid (str: char list) =
-            Array2D.init gridLength gridLength (fun x y ->
-                let index = x * gridLength + y
-
-                match cellFromString str[index] with
-                | Ok cell -> cell
-                | Error _ -> Dead)
-
-        grid (Seq.toList string)
 
     let loadModel (model: Model) =
         let filePath = Path.Combine(folderPath, getFullFileName model.name)
         let modelString = File.ReadLines(filePath) |> Seq.head
-        let loadedGrid = translateStringToGrid modelString
+        let loadedGrid = Parse.gridFromString modelString gridLength
         { init with grid = loadedGrid }
 
     let toggleStepState (model: Model) =
@@ -208,7 +163,7 @@ module Game =
             Button.create
                 [ Button.width squareLength
                   Button.height squareLength
-                  Button.content (cellToString model.grid[pos.X, pos.Y])
+                  Button.content (Parse.cellToString model.grid[pos.X, pos.Y])
                   Button.onClick (fun _ -> dispatch (ChangeCellState pos)) ]
 
         let createBottomButton (content: String) (margin: float) handle =
@@ -246,12 +201,18 @@ module Game =
 
                                              for msg in buttons do
                                                  let margin = marginBase * getFloatedIndexOfMsg msg buttons
-                                                 createBottomButton (msgToString msg) margin (fun _ -> dispatch msg)
 
-                                             createBottomButton (stepsToString model.steps) (marginBase * 7.0) (fun _ ->
-                                                 dispatch ToggleInfinite)
+                                                 createBottomButton (Parse.msgToString msg) margin (fun _ ->
+                                                     dispatch msg)
 
-                                             createBottomButton (msgToString Increase) (marginBase * 8.0) (fun _ ->
-                                                 dispatch Increase)
+                                             createBottomButton
+                                                 (Parse.stepsToString model.steps)
+                                                 (marginBase * 7.0)
+                                                 (fun _ -> dispatch ToggleInfinite)
+
+                                             createBottomButton
+                                                 (Parse.msgToString Increase)
+                                                 (marginBase * 8.0)
+                                                 (fun _ -> dispatch Increase)
 
                                              ] ] ] ]
