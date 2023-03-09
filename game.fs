@@ -104,15 +104,15 @@ module Game =
 
     let init = {grid = initGrid; state = Stopped; steps = Infinite; name = ""}
 
-    let flipCellState (coordinates: Position) (model: Model) : Model =
+    let flipCellState (position: Position) (model: Model) : Model =
         let newGrid: Cell[,] =
             Array2D.init gridLength gridLength (fun x y ->
-                if x = coordinates.X && y = coordinates.Y then
-                    match model.grid[coordinates.X, coordinates.Y] with
+                match position with
+                | pos when y = pos.Y && x = pos.X ->
+                    match model.grid[pos.X, pos.Y] with
                     | Alive -> Cell.Dead
                     | Dead -> Cell.Alive
-                else
-                    model.grid[x, y])
+                | _ -> model.grid[x, y])
         { model with grid = newGrid }
 
     let getNeighbours (grid: Grid) (xCoord: int) (yCoord: int) : Cell list =
