@@ -27,7 +27,7 @@ module Game =
 
     type Position = { X: int; Y: int }
 
-    type Msg =
+    type Action =
         | ChangeCellState of Position
         | ChangeModelName of String
         | Start
@@ -65,8 +65,8 @@ module Game =
         | Alive -> "■"
         | Dead -> " "
         
-    let msgToString (msg: Msg) =
-        match msg with
+    let msgToString (action: Action) =
+        match action with
         | Start -> "Start"
         | Stop -> "Stop"
         | Save -> "Save"
@@ -209,8 +209,8 @@ module Game =
         | Running -> true
         | _ -> false
         
-    let update (msg: Msg) (model: Model) =
-        match msg with
+    let update (action: Action) (model: Model) =
+        match action with
         | Start -> { model with state = Running }
         | Stop -> { model with state = Stopped }
         | Next -> generateNextGeneration model
@@ -260,7 +260,7 @@ module Game =
                     Button.content content
                     Button.onClick handle ]
                 
-        let getIndexOfMsg (toFind: Msg) (list: Msg list) =
+        let getIndexOfMsg (toFind: Action) (list: Action list) =
                 list
                 |> List.findIndex toFind.Equals
                 |> float
