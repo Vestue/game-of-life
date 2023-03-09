@@ -1,61 +1,15 @@
 ﻿namespace DVA229_Proj_AvaloniaElmish
 
 open System
-open System.Linq.Expressions
-open System.Net.Mime
 open System.Timers
-open Avalonia
 open Avalonia.Controls
-open Avalonia.Input
 open Avalonia.Layout
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Core
-open Microsoft.VisualBasic.CompilerServices
+open Avalonia.FuncUI.DSL
+open System.IO
 
 module Game =
-    open Avalonia.Controls
-    open Avalonia.FuncUI.DSL
-    open Avalonia.Controls.ApplicationLifetimes
-    open Avalonia.Dialogs
-    open System.IO
-
-    open Microsoft.FSharp.Collections
-
-    type Cell =
-        | Dead
-        | Alive
-
-    type Position = { X: int; Y: int }
-
-    type Action =
-        | ChangeCellState of Position
-        | ChangeModelName of String
-        | Start
-        | Tick
-        | Stop
-        | Save
-        | Load
-        | Next
-        | Reset
-        | Increase
-        | Decrease
-        | ToggleInfinite
-
-    type Grid = Cell[,]
-
-    type Steps =
-        | Infinite
-        | Amount of int
-
-    type State =
-        | Stopped
-        | Running
-
-    type Model =
-        { grid: Grid
-          state: State
-          steps: Steps
-          name: String }
 
     let stepsToString (steps: Steps) =
         match steps with
@@ -67,8 +21,8 @@ module Game =
         | Alive -> "■"
         | Dead -> " "
 
-    let msgToString (action: Action) =
-        match action with
+    let msgToString (msg: Message) =
+        match msg with
         | Start -> "Start"
         | Stop -> "Stop"
         | Save -> "Save"
@@ -122,7 +76,7 @@ module Game =
 
         { model with grid = newGrid }
 
-    let getNeighbours (grid: Grid) (xCoord: int) (yCoord: int) : Cell list =
+    let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) : Cell list =
         // Use min and max to prevent cells at the edges from attempting
         // to access indexes that are not in the array.
         let rowRange = { max 0 (xCoord - 1) .. min (gridLength - 1) (xCoord + 1) }
@@ -153,7 +107,7 @@ module Game =
         | Alive -> 1
         | Dead -> 0
 
-    let sumLivingNeighbours (grid: Grid) x y : int =
+    let sumLivingNeighbours (grid: GameGrid) x y : int =
         getNeighbours grid x y |> List.fold (fun acc cell -> acc + countAlive cell) 0
 
     let generateNextGeneration (model: Model) : Model =
@@ -215,8 +169,8 @@ module Game =
         | Running -> true
         | _ -> false
 
-    let update (action: Action) (model: Model) =
-        match action with
+    let update (msg: Message) (model: Model) =
+        match msg with
         | Start -> { model with state = Running }
         | Stop -> { model with state = Stopped }
         | Next -> generateNextGeneration model
@@ -265,7 +219,7 @@ module Game =
                   Button.content content
                   Button.onClick handle ]
 
-        let getIndexOfMsg (toFind: Action) (list: Action list) =
+        let getFloatedIndexOfMsg (toFind: Message) (list: Message list) =
             list |> List.findIndex toFind.Equals |> float
 
         DockPanel.create
@@ -291,7 +245,7 @@ module Game =
                                              let buttons = [ Start; Stop; Reset; Next; Save; Load; Decrease ]
 
                                              for msg in buttons do
-                                                 let margin = marginBase * getIndexOfMsg msg buttons
+                                                 let margin = marginBase * getFloatedIndexOfMsg msg buttons
                                                  createBottomButton (msgToString msg) margin (fun _ -> dispatch msg)
 
                                              createBottomButton (stepsToString model.steps) (marginBase * 7.0) (fun _ ->
