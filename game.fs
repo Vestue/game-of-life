@@ -216,8 +216,14 @@ module Game =
         | Next -> generateNextGeneration model
         | Tick when isRunning model -> generateNextGeneration model
         | Reset -> init
-        | ChangeCellState pos -> flipCellState pos model
-        | Load -> loadModel model
+        | ChangeCellState pos ->
+            match model.state with
+            | Stopped -> flipCellState pos model
+            | _ -> model
+        | Load ->
+            match model.state with
+            | Stopped -> loadModel model
+            | _ -> model
         | Save ->
             match (saveModel model) with
             | Ok newModel -> newModel
