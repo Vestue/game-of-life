@@ -7,16 +7,8 @@ open Avalonia.Layout
 open Microsoft.FSharp.Collections
 open Microsoft.FSharp.Core
 open Avalonia.FuncUI.DSL
-open System.IO
 
 module Game =
-
-    let gridLength = 16
-
-    let isAlive (cell: Cell) =
-        match cell with
-        | Alive -> true
-        | _ -> false
 
 
     let timer dispatch =
@@ -28,17 +20,15 @@ module Game =
     //? 'model' has to be here.
     let subscribe model = [ timer ]
 
-    let initGrid = Array2D.create gridLength gridLength Cell.Dead
-
     let init =
-        { grid = initGrid
+        { grid = GameGrid.init
           state = Stopped
           steps = Infinite
           name = "" }
 
     let flipCellState (position: Position) (model: Model) : Model =
         let newGrid: Cell[,] =
-            Array2D.init gridLength gridLength (fun x y ->
+            Array2D.init GameGrid.length GameGrid.length (fun x y ->
                 match position with
                 | pos when y = pos.Y && x = pos.X ->
                     match model.grid[pos.X, pos.Y] with
@@ -51,8 +41,8 @@ module Game =
     let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) : Cell list =
         // Use min and max to prevent cells at the edges from attempting
         // to access indexes that are not in the array.
-        let rowRange = { max 0 (xCoord - 1) .. min (gridLength - 1) (xCoord + 1) }
-        let colRange = { max 0 (yCoord - 1) .. min (gridLength - 1) (yCoord + 1) }
+        let rowRange = { max 0 (xCoord - 1) .. min (GameGrid.length - 1) (xCoord + 1) }
+        let colRange = { max 0 (yCoord - 1) .. min (GameGrid.length - 1) (yCoord + 1) }
 
         [ for row in rowRange do
               for col in colRange do
@@ -84,10 +74,10 @@ module Game =
 
     let generateNextGeneration (model: Model) : Model =
         let newGen: Cell[,] =
-            Array2D.init gridLength gridLength (fun x y ->
+            Array2D.init GameGrid.length GameGrid.length (fun x y ->
                 match sumLivingNeighbours model.grid x y with
                 | 3 -> Alive
-                | 2 when isAlive model.grid[x, y] -> Alive
+                | 2 when Cell.isAlive model.grid[x, y] -> Alive
                 | _ -> Dead)
 
         decreaseStepsIfNeeded { model with grid = newGen }
@@ -115,7 +105,7 @@ module Game =
             | _ -> model
         | Load ->
             match model.state with
-            | Stopped -> FileManager.loadModel model gridLength
+            | Stopped -> FileManager.loadModel model
             | _ -> model
         | Save ->
             match (FileManager.saveModel model) with
@@ -141,7 +131,7 @@ module Game =
             Button.create
                 [ Button.width squareLength
                   Button.height squareLength
-                  Button.content (Parse.cellToString model.grid[pos.X, pos.Y])
+                  Button.content (Cell.toString model.grid[pos.X, pos.Y])
                   Button.onClick (fun _ -> dispatch (ChangeCellState pos)) ]
 
         let createBottomButton (content: String) (margin: float) handle =
@@ -164,8 +154,8 @@ module Game =
                           WrapPanel.itemWidth squareLength
                           WrapPanel.maxWidth (squareLength * buttonsInColumn)
 
-                          WrapPanel.children[for i = 0 to gridLength - 1 do
-                                                 for j = 0 to gridLength - 1 do
+                          WrapPanel.children[for i = 0 to GameGrid.length - 1 do
+                                                 for j = 0 to GameGrid.length - 1 do
                                                      createCellButton { X = i; Y = j }
 
                                              TextBox.create
@@ -180,17 +170,15 @@ module Game =
                                              for msg in buttons do
                                                  let margin = marginBase * getFloatedIndexOfMsg msg buttons
 
-                                                 createBottomButton (Parse.msgToString msg) margin (fun _ ->
+                                                 createBottomButton (Message.toString msg) margin (fun _ ->
                                                      dispatch msg)
 
                                              createBottomButton
-                                                 (Parse.stepsToString model.steps)
+                                                 (Steps.toString model.steps)
                                                  (marginBase * 7.0)
                                                  (fun _ -> dispatch ToggleInfinite)
 
-                                             createBottomButton
-                                                 (Parse.msgToString Increase)
-                                                 (marginBase * 8.0)
-                                                 (fun _ -> dispatch Increase)
+                                             createBottomButton (Message.toString Increase) (marginBase * 8.0) (fun _ ->
+                                                 dispatch Increase)
 
                                              ] ] ] ]

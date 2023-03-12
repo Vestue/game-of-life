@@ -15,14 +15,14 @@ let saveModel (model: Model) =
     match model.name with
     | "" -> Error "File needs to have a name"
     | _ ->
-        saveStringAsFile (Parse.gridToString model.grid) (getFullFileName model.name)
+        saveStringAsFile (GameGrid.toString model.grid) (getFullFileName model.name)
         Ok { model with name = "" } // Clear the filename to give feedback to the user that it has been saved
 
 
-let loadModel (model: Model) (gridLength: int) =
+let loadModel (model: Model) =
     let filePath = Path.Combine(folderPath, getFullFileName model.name)
     let modelString = File.ReadLines(filePath) |> Seq.head
-    let loadedGrid = Parse.gridFromString modelString gridLength
+    let loadedGrid = GameGrid.fromString modelString GameGrid.length
 
     { grid = loadedGrid
       state = Stopped
