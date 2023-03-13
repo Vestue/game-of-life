@@ -25,9 +25,13 @@ let saveModel (model: Model) =
 let loadModel (model: Model) =
     match model.name with
     | name when name = initialFileName -> Error "No given file name to load"
-    | _ -> 
+    | _ ->
         let filePath = Path.Combine(folderPath, getFullFileName model.name)
         let modelString = File.ReadLines(filePath) |> Seq.head
-        let loadedGrid = GameGrid.fromString modelString GameGrid.length
+        let loadedGrid = GameGrid.fromString modelString
 
-        Ok { grid = loadedGrid; state = Stopped; steps = Infinite; name = "" }
+        Ok
+            { grid = loadedGrid
+              state = Stopped
+              steps = Infinite
+              name = "" }

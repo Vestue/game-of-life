@@ -10,7 +10,6 @@ open Avalonia.FuncUI.DSL
 
 module Game =
 
-
     let timer dispatch =
         let time = new Timer(1000.0)
         time.Elapsed.Add(fun _ -> dispatch Tick)
@@ -19,7 +18,6 @@ module Game =
     // Setup the timer and connect it to the elmish model
     //? 'model' has to be here.
     let subscribe model = [ timer ]
-    
 
     let init =
         { grid = GameGrid.init
@@ -162,7 +160,7 @@ module Game =
                                                  for j = 0 to GameGrid.length - 1 do
                                                      createCellButton { X = i; Y = j }
 
-                                             let buttons = [ Start; Stop; Reset; Next; Save; ]
+                                             let buttons = [ Start; Stop; Reset; Next; Save ]
 
                                              for msg in buttons do
                                                  let margin = marginBase * getFloatedIndexOfMsg msg buttons
@@ -176,9 +174,12 @@ module Game =
                                                    TextBox.height optionHeight
                                                    TextBox.text model.name
                                                    TextBox.onTextChanged (ChangeModelName >> dispatch) ]
-                                                 
-                                             createBottomButton (Message.toString Load) (marginBase * 6.0) (fun _ -> dispatch Load)
-                                             createBottomButton (Message.toString Decrease) (marginBase * 7.0) (fun _ -> dispatch Decrease)
+
+                                             createBottomButton (Message.toString Load) (marginBase * 6.0) (fun _ ->
+                                                 dispatch Load)
+
+                                             createBottomButton (Message.toString Decrease) (marginBase * 7.0) (fun _ ->
+                                                 dispatch Decrease)
 
                                              createBottomButton
                                                  (Steps.toString model.steps)
