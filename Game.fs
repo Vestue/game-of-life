@@ -19,12 +19,13 @@ module Game =
     // Setup the timer and connect it to the elmish model
     //? 'model' has to be here.
     let subscribe model = [ timer ]
+    
 
     let init =
         { grid = GameGrid.init
           state = Stopped
           steps = Infinite
-          name = "" }
+          name = FileManager.initialFileName }
 
     let flipCellState (position: Position) (model: Model) : Model =
         let newGrid: Cell[,] =
@@ -105,7 +106,10 @@ module Game =
             | _ -> model
         | Load ->
             match model.state with
-            | Stopped -> FileManager.loadModel model
+            | Stopped ->
+                match FileManager.loadModel model with
+                | Ok newModel -> newModel
+                | Error _ -> model
             | _ -> model
         | Save ->
             match (FileManager.saveModel model) with
@@ -158,14 +162,7 @@ module Game =
                                                  for j = 0 to GameGrid.length - 1 do
                                                      createCellButton { X = i; Y = j }
 
-                                             TextBox.create
-                                                 [ TextBox.margin (-(marginBase), 10.0, 0.0, 0.0)
-                                                   TextBox.width optionWidth
-                                                   TextBox.height optionHeight
-                                                   TextBox.text model.name
-                                                   TextBox.onTextChanged (ChangeModelName >> dispatch) ]
-
-                                             let buttons = [ Start; Stop; Reset; Next; Save; Load; Decrease ]
+                                             let buttons = [ Start; Stop; Reset; Next; Save; ]
 
                                              for msg in buttons do
                                                  let margin = marginBase * getFloatedIndexOfMsg msg buttons
@@ -173,12 +170,22 @@ module Game =
                                                  createBottomButton (Message.toString msg) margin (fun _ ->
                                                      dispatch msg)
 
+                                             TextBox.create
+                                                 [ TextBox.margin ((marginBase * 6.0), 10.0, 0.0, 0.0)
+                                                   TextBox.width optionWidth
+                                                   TextBox.height optionHeight
+                                                   TextBox.text model.name
+                                                   TextBox.onTextChanged (ChangeModelName >> dispatch) ]
+                                                 
+                                             createBottomButton (Message.toString Load) (marginBase * 6.0) (fun _ -> dispatch Load)
+                                             createBottomButton (Message.toString Decrease) (marginBase * 7.0) (fun _ -> dispatch Decrease)
+
                                              createBottomButton
                                                  (Steps.toString model.steps)
-                                                 (marginBase * 7.0)
+                                                 (marginBase * 8.0)
                                                  (fun _ -> dispatch ToggleInfinite)
 
-                                             createBottomButton (Message.toString Increase) (marginBase * 8.0) (fun _ ->
+                                             createBottomButton (Message.toString Increase) (marginBase * 9.0) (fun _ ->
                                                  dispatch Increase)
 
                                              ] ] ] ]
