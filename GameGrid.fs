@@ -21,8 +21,10 @@ module GameGrid =
             Array2D.init length length (fun x y ->
                 let index = x * length + y
 
+                // Errors in single characters are handled as dead cells
+                // to ensure that a full grid is returned from the function.
                 match Cell.fromString str[index] with
                 | Ok cell -> cell
-                | Error _ -> Dead)
+                | Error _ -> Dead) 
 
         grid (Seq.toList string)

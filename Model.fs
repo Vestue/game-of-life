@@ -7,7 +7,7 @@ type State =
     | Running
 
 type Model =
-    { grid: GameGrid
-      state: State
-      steps: Steps
-      name: String }
+    { grid: GameGrid  // Grid of cells
+      state: State    // Current running state of the game
+      steps: Steps    // Amount of steps until the game should stop
+      name: String }  // File name to be used for saving and loading

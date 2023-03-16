@@ -2,6 +2,7 @@ namespace DVA229_Proj_AvaloniaElmish
 
 open System
 
+// The message which will be sent to update the model by dispatch
 type Message =
     | ChangeCellState of Position
     | ChangeModelName of String

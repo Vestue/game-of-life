@@ -10,6 +10,7 @@ open Avalonia.FuncUI.DSL
 
 module Game =
 
+    // Create a timer that sends a Tick to update every second
     let timer dispatch =
         let time = new Timer(1000.0)
         time.Elapsed.Add(fun _ -> dispatch Tick)
@@ -25,6 +26,7 @@ module Game =
           steps = Infinite
           name = FileManager.initialFileName }
 
+    // Flip the state of a given cell from dead to alive or alive to dead
     let flipCellState (position: Position) (model: Model) : Model =
         let newGrid: Cell[,] =
             Array2D.init GameGrid.length GameGrid.length (fun x y ->
@@ -37,6 +39,7 @@ module Game =
 
         { model with grid = newGrid }
 
+    // Get a list of the neighbours of cell with specified position
     let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) : Cell list =
         // Use min and max to prevent cells at the edges from attempting
         // to access indexes that are not in the array.
@@ -51,8 +54,9 @@ module Game =
     let increaseSteps (model: Model) =
         match model.steps with
         | Amount x -> { model with steps = Amount(x + 1) }
-        | _ -> { model with steps = Amount 1 }
+        | Infinite -> { model with steps = Amount 1 }
 
+    // Decrease steps by 1 until 0 if they are Steps Amount x
     let decreaseStepsIfNeeded (model: Model) =
         match model.steps with
         | Amount x when x <= 1 ->
@@ -61,8 +65,9 @@ module Game =
               steps = Amount 0
               name = model.name }
         | Amount x -> { model with steps = Amount(x - 1) }
-        | _ -> model
+        | Infinite -> model
 
+    // Used by functions counting amount of living cells
     let countAlive (cell: Cell) : int =
         match cell with
         | Alive -> 1
@@ -81,6 +86,7 @@ module Game =
 
         decreaseStepsIfNeeded { model with grid = newGen }
 
+    // Toggles the state of steps between infinite and amount x
     let toggleStepState (model: Model) =
         match model.steps with
         | Infinite -> { model with steps = Amount 0 }
@@ -91,6 +97,7 @@ module Game =
         | Running -> true
         | _ -> false
 
+    // Update the model using the given message
     let update (msg: Message) (model: Model) =
         match msg with
         | Start -> { model with state = Running }
