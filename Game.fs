@@ -21,7 +21,7 @@ module Game =
     let subscribe model = [ timer ]
 
     let init =
-        { grid = GameGrid.init
+        { grid = GameGrid.init.Force()
           state = Stopped
           steps = Infinite
           name = FileManager.initialFileName }

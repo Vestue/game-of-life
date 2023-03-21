@@ -3,7 +3,7 @@ module DVA229_Proj_AvaloniaElmish.FileManager
 open System
 open System.IO
 
-let initialFileName = "..."
+let initialFileName = ""
 
 let folderPath = lazy (__SOURCE_DIRECTORY__ + "/saves")
 
@@ -15,7 +15,6 @@ let getFullFileName (name: String) = name + ".rog" // rog = Ragnar Oscar Grid
 
 let saveModel (model: Model) =
     match model.name with
-    | "" -> Error "File needs to have a name"
     | name when name = initialFileName -> Error "File has no given name"
     | _ ->
         saveStringAsFile (GameGrid.toString model.grid) (getFullFileName model.name)
