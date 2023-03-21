@@ -46,6 +46,8 @@ module Game =
         let rowRange = { max 0 (xCoord - 1) .. min (GameGrid.length - 1) (xCoord + 1) }
         let colRange = { max 0 (yCoord - 1) .. min (GameGrid.length - 1) (yCoord + 1) }
 
+        // This can be lazy evaluated as each cell will always have the
+        // same neighbours.
         lazy [ for row in rowRange do
                   for col in colRange do
                       if row <> xCoord || col <> yCoord then
