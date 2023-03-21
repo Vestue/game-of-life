@@ -21,7 +21,7 @@ module Game =
     let subscribe model = [ timer ]
 
     let init =
-        { grid = GameGrid.init
+        { grid = GameGrid.init.Force()
           state = Stopped
           steps = Infinite
           name = FileManager.initialFileName }
@@ -40,16 +40,18 @@ module Game =
         { model with grid = newGrid }
 
     // Get a list of the neighbours of cell with specified position
-    let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) : Cell list =
+    let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) =
         // Use min and max to prevent cells at the edges from attempting
         // to access indexes that are not in the array.
         let rowRange = { max 0 (xCoord - 1) .. min (GameGrid.length - 1) (xCoord + 1) }
         let colRange = { max 0 (yCoord - 1) .. min (GameGrid.length - 1) (yCoord + 1) }
 
-        [ for row in rowRange do
-              for col in colRange do
-                  if row <> xCoord || col <> yCoord then
-                      yield grid[row, col] ]
+        // This can be lazy evaluated as each cell will always have the
+        // same set of neighbours.
+        lazy [ for row in rowRange do
+                  for col in colRange do
+                      if row <> xCoord || col <> yCoord then
+                          yield grid[row, col] ]
 
     let increaseSteps (model: Model) =
         match model.steps with
@@ -74,7 +76,8 @@ module Game =
         | Dead -> 0
 
     let sumLivingNeighbours (grid: GameGrid) x y : int =
-        getNeighbours grid x y |> List.fold (fun acc cell -> acc + countAlive cell) 0
+        (getNeighbours grid x y).Force()
+        |> List.fold (fun acc cell -> acc + countAlive cell) 0
 
     let generateNextGeneration (model: Model) : Model =
         let newGen: Cell[,] =
@@ -151,8 +154,11 @@ module Game =
                   Button.content content
                   Button.onClick handle ]
 
+        // Get a index which will be multiplied with a margin base
+        // to  create the margin for the button.
+        // This is lazy evaluated as the position of a button will always be the same.
         let getFloatedIndexOfMsg (toFind: Message) (list: Message list) =
-            list |> List.findIndex toFind.Equals |> float
+            lazy (list |> List.findIndex toFind.Equals |> float)
 
         DockPanel.create
             [ DockPanel.children
@@ -170,7 +176,7 @@ module Game =
                                              let buttons = [ Start; Stop; Reset; Next; Save ]
 
                                              for msg in buttons do
-                                                 let margin = marginBase * getFloatedIndexOfMsg msg buttons
+                                                 let margin = marginBase * (getFloatedIndexOfMsg msg buttons).Force()
 
                                                  createBottomButton (Message.toString msg) margin (fun _ ->
                                                      dispatch msg)

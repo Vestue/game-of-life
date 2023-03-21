@@ -8,7 +8,7 @@ module GameGrid =
 
     let length = 16
 
-    let init = Array2D.create length length Cell.Dead
+    let init = lazy (Array2D.create length length Cell.Dead)
 
     let toString (grid: GameGrid) =
         grid
