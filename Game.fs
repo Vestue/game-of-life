@@ -40,16 +40,16 @@ module Game =
         { model with grid = newGrid }
 
     // Get a list of the neighbours of cell with specified position
-    let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) : Cell list =
+    let getNeighbours (grid: GameGrid) (xCoord: int) (yCoord: int) =
         // Use min and max to prevent cells at the edges from attempting
         // to access indexes that are not in the array.
         let rowRange = { max 0 (xCoord - 1) .. min (GameGrid.length - 1) (xCoord + 1) }
         let colRange = { max 0 (yCoord - 1) .. min (GameGrid.length - 1) (yCoord + 1) }
 
-        [ for row in rowRange do
-              for col in colRange do
-                  if row <> xCoord || col <> yCoord then
-                      yield grid[row, col] ]
+        lazy [ for row in rowRange do
+                  for col in colRange do
+                      if row <> xCoord || col <> yCoord then
+                          yield grid[row, col] ]
 
     let increaseSteps (model: Model) =
         match model.steps with
@@ -74,7 +74,8 @@ module Game =
         | Dead -> 0
 
     let sumLivingNeighbours (grid: GameGrid) x y : int =
-        getNeighbours grid x y |> List.fold (fun acc cell -> acc + countAlive cell) 0
+        (getNeighbours grid x y).Force()
+        |> List.fold (fun acc cell -> acc + countAlive cell) 0
 
     let generateNextGeneration (model: Model) : Model =
         let newGen: Cell[,] =
