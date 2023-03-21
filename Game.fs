@@ -47,7 +47,7 @@ module Game =
         let colRange = { max 0 (yCoord - 1) .. min (GameGrid.length - 1) (yCoord + 1) }
 
         // This can be lazy evaluated as each cell will always have the
-        // same neighbours.
+        // same set of neighbours.
         lazy [ for row in rowRange do
                   for col in colRange do
                       if row <> xCoord || col <> yCoord then
@@ -154,8 +154,11 @@ module Game =
                   Button.content content
                   Button.onClick handle ]
 
+        // Get a index which will be multiplied with a margin base
+        // to  create the margin for the button.
+        // This is lazy evaluated as the position of a button will always be the same.
         let getFloatedIndexOfMsg (toFind: Message) (list: Message list) =
-            list |> List.findIndex toFind.Equals |> float
+            lazy (list |> List.findIndex toFind.Equals |> float)
 
         DockPanel.create
             [ DockPanel.children
@@ -173,7 +176,7 @@ module Game =
                                              let buttons = [ Start; Stop; Reset; Next; Save ]
 
                                              for msg in buttons do
-                                                 let margin = marginBase * getFloatedIndexOfMsg msg buttons
+                                                 let margin = marginBase * (getFloatedIndexOfMsg msg buttons).Force()
 
                                                  createBottomButton (Message.toString msg) margin (fun _ ->
                                                      dispatch msg)
